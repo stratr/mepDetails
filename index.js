@@ -25,6 +25,43 @@ function getMepURLs() {
     return bigquery.query(query, options);
 }
 
+function splitAndTrim(text, delim) {
+    return text.split(delim).map((el) => {
+        return el.trim();
+    })
+}
+
+function collectDetails($) {
+    // get membership terms
+    let terms = null;
+    const mpTermsEl = $('h3.mopTerms').text();
+    if (mpTermsEl) {
+        const datesString = splitAndTrim(mpTermsEl, '\n').find((el) => {
+            return /^\d/.test(el)
+        });
+        if (datesString) {
+            terms = splitAndTrim(datesString, ',').map((term, i) => {
+                const startEnd = splitAndTrim(term, '–');
+                return {
+                    term_number: i+1,
+                    start: startEnd[0],
+                    end: startEnd[1]
+                }
+            });
+        }
+    }
+
+    const homepage = $('#ctl00_PlaceHolderMain_MOPInformation_HomePagePanel a').attr('href');
+
+    const currentParlInformation = $('#ctl00_PlaceHolderMain_MOPInformation_CurrentParliamentaryInformationPanel MOPContainer');
+    // TODO: loop whatever comes from here into a STRUCT format: keyname, keyvalue
+
+    return {
+        terms: terms,
+        homepage, homepage
+    }
+}
+
 async function scrapeMepDetails() {
     const bqQuery = await getMepURLs();
     if (bqQuery && bqQuery.length > 0) {
@@ -42,9 +79,13 @@ async function scrapeMepDetails() {
 
         Promise.all(fetchPromises)
             .then(results => {
+                const mepsInfo = [];
+
                 results.forEach(($) => {
-                    console.log($.html());
+                    mepsInfo.push(collectDetails($));
                 });
+
+                console.log(JSON.stringify(mepsInfo));
             })
             .catch((err) => {
                 console.log(JSON.stringify(err));
