@@ -43,7 +43,7 @@ function collectDetails($) {
             terms = splitAndTrim(datesString, ',').map((term, i) => {
                 const startEnd = splitAndTrim(term, '–');
                 return {
-                    term_number: i+1,
+                    term_number: i + 1,
                     start: startEnd[0],
                     end: startEnd[1]
                 }
@@ -53,12 +53,35 @@ function collectDetails($) {
 
     const homepage = $('#ctl00_PlaceHolderMain_MOPInformation_HomePagePanel a').attr('href');
 
-    const currentParlInformation = $('#ctl00_PlaceHolderMain_MOPInformation_CurrentParliamentaryInformationPanel MOPContainer');
-    // TODO: loop whatever comes from here into a STRUCT format: keyname, keyvalue
+    const cv = [];
+    const cvEl = $('#ctl00_PlaceHolderMain_MOPInformation_CvPanel ul.sub-menu > li');
+    cvEl.each(function(i, elem) {
+        const section = $(this).find('div.mop-title-label').text().trim();
+
+        const liValues = [];
+        $(this).find('div.mop-info-value ul li').each(function(j, liEl) {
+            liValues.push($(this).text().trim())
+        });
+
+        const textValue = $(this).find('div.mop-info-value').text().trim();
+
+        const value = liValues.length > 0 ? liValues.join('|') : textValue;
+
+        if (section && value) {
+            const sectionClean = section.replace(/[:\/-]/g, '').replace(/\s/g, '_').toLowerCase();
+            const valueClean = value.replace(/[\t\n]/g, '');
+
+            cv.push({
+                section: sectionClean,
+                text: valueClean
+            });
+        }
+    });
 
     return {
         terms: terms,
-        homepage, homepage
+        homepage, homepage,
+        cv: cv
     }
 }
 
@@ -82,10 +105,17 @@ async function scrapeMepDetails() {
                 const mepsInfo = [];
 
                 results.forEach(($) => {
+                    // let details = collectDetails(result[0]);
+                    // details['name'] = result[1];
+                    // details['url'] = result[2]
+
+                    // mepsInfo.push(details);
+                    console.log($);
+
                     mepsInfo.push(collectDetails($));
                 });
 
-                console.log(JSON.stringify(mepsInfo));
+                console.log(JSON.stringify(mepsInfo, undefined, 2));
             })
             .catch((err) => {
                 console.log(JSON.stringify(err));
