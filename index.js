@@ -4,9 +4,13 @@ const bigquery = new BigQuery();
 const cheerio = require('cheerio')
 const axios = require("axios");
 
-const fetchData = async (siteUrl) => {
+const fetchData = async (siteUrl, name) => {
     const result = await axios.get(siteUrl);
-    return cheerio.load(result.data);
+    return {
+        html: cheerio.load(result.data),
+        name: name,
+        url: siteUrl
+        };
 };
 
 function getMepURLs() {
@@ -96,23 +100,20 @@ async function scrapeMepDetails() {
 
         const fetchPromises = [];
         mepList.forEach((mep) => {
-            const $ = fetchData(mep.url);
-            fetchPromises.push($);
+            const mepHtml = fetchData(mep.url, mep.name);
+            fetchPromises.push(mepHtml);
         });
 
         Promise.all(fetchPromises)
             .then(results => {
                 const mepsInfo = [];
 
-                results.forEach(($) => {
-                    // let details = collectDetails(result[0]);
-                    // details['name'] = result[1];
-                    // details['url'] = result[2]
+                results.forEach((result) => {
+                    let details = collectDetails(result.html);
+                    details['name'] = result.name;
+                    details['url'] = result.url;
 
-                    // mepsInfo.push(details);
-                    console.log($);
-
-                    mepsInfo.push(collectDetails($));
+                    mepsInfo.push(details);
                 });
 
                 console.log(JSON.stringify(mepsInfo, undefined, 2));
